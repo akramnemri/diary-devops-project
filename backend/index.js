@@ -35,5 +35,6 @@ app.get("/health", (req, res) => {
 
 const PORT = 3000;
 app.listen(PORT, () => {
+  console.log("Diary backend initialized");
   console.log(`Server running on port ${PORT}`);
 });
