@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: diary-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: diary-backend
+  template:
+    metadata:
+      labels:
+        app: diary-backend
+    spec:
+      containers:
+        - name: backend
+          image: gcr.io/diary-devops-494522/diary-backend:latest
+          ports:
+            - containerPort: 3000
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"

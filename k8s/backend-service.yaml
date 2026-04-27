@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: diary-backend-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: diary-backend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
