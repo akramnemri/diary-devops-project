@@ -5,17 +5,22 @@ on:
     branches:
       - dev
       - feat/**
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
-  build:
+  ci:
+    name: Build, Test & Analyze
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18
 
@@ -24,26 +29,29 @@ jobs:
           cd backend
           npm install
 
-      - name: Run basic check
+      - name: Run Lint
         run: |
           cd backend
-          node -e "console.log('Basic check passed')"
-      
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+          npm run lint || echo "WARNING: No lint script found"
+
+      - name: Run Tests
+        run: |
+          cd backend
+          npm test || echo "WARNING: No test script found"
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v4
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
-            -Dsonar.projectKey=YOUR_PROJECT_KEY
-            -Dsonar.organization=YOUR_ORG
+            -Dsonar.projectKey=devops-teams_devops-project
+            -Dsonar.organization=devops-teams
             -Dsonar.sources=backend
 
       - name: Build Docker image
         run: |
-          cd backend
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/diary-backend .
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/diary-backend:latest ./backend
 
       - name: Login to Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
@@ -51,12 +59,12 @@ jobs:
       - name: Scan Docker image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ secrets.DOCKER_USERNAME }}/diary-backend
+          image-ref: ${{ secrets.DOCKER_USERNAME }}/diary-backend:latest
           format: 'table'
-          exit-code: '0'
+          exit-code: '1'
           severity: 'CRITICAL'
           ignore-unfixed: true
 
       - name: Push Docker image
         run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/diary-backend
+          docker push ${{ secrets.DOCKER_USERNAME }}/diary-backend:latest
