@@ -1,5 +1,5 @@
-# Use Node base image
-FROM node:18-slim
+# Use Node base image (updated for MongoDB compatibility)
+FROM node:20-slim
 
 # Set working directory
 WORKDIR /app
