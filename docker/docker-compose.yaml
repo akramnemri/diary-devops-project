@@ -1,0 +1,20 @@
+version: '3.8'
+services:
+  backend:
+    build: ../backend
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGO_URI=mongodb+srv://florensiahiro1_db_user:INTHend1@cluster0.dvh0z6y.mongodb.net/?appName=Cluster0
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:
