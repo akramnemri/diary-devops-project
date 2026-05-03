@@ -55,116 +55,114 @@
         </footer>
     </div>
 
-    <script>
-        // Backend URL - change if needed
-        const API_URL = window.location.origin.replace('3001', '3000') + '/api';
-        // For production, use the service URL
-        // const API_URL = 'http://diary-backend-service:80';
+   <script>
+    // Backend URL - use your backend LoadBalancer IP
+    const BACKEND_URL = 'http://34.38.7.11:80';
 
-        // Load entries on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            loadEntries();
-            checkHealth();
-        });
+    // Load entries on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        loadEntries();
+        checkHealth();
+    });
 
-        // Add new entry
-        async function addEntry() {
-            const content = document.getElementById('entryContent').value;
-            const status = document.getElementById('addStatus');
+    // Add new entry
+    async function addEntry() {
+        const content = document.getElementById('entryContent').value;
+        const status = document.getElementById('addStatus');
+        
+        if (!content.trim()) {
+            status.textContent = '⚠️ Please write something!';
+            status.className = 'error';
+            return;
+        }
+
+        status.textContent = 'Saving...';
+        status.className = '';
+
+        try {
+            const response = await fetch(BACKEND_URL + '/entries', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: content })
+            });
+
+            if (response.ok) {
+                document.getElementById('entryContent').value = '';
+                status.textContent = '✅ Entry saved!';
+                status.className = 'success';
+                loadEntries();
+            } else {
+                throw new Error('Failed to save');
+            }
+        } catch (error) {
+            status.textContent = '❌ Error saving entry';
+            status.className = 'error';
+        }
+    }
+
+    // Load all entries
+    async function loadEntries() {
+        const entriesList = document.getElementById('entriesList');
+        
+        try {
+            const response = await fetch(BACKEND_URL + '/entries');
+            const entries = await response.json();
             
-            if (!content.trim()) {
-                status.textContent = '⚠️ Please write something!';
-                status.className = 'error';
+            if (entries.length === 0) {
+                entriesList.innerHTML = '<p class="empty">No entries yet. Write your first one!</p>';
                 return;
             }
 
-            status.textContent = 'Saving...';
-            status.className = '';
-
-            try {
-                const response = await fetch('/entries', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ content: content })
-                });
-
-                if (response.ok) {
-                    document.getElementById('entryContent').value = '';
-                    status.textContent = '✅ Entry saved!';
-                    status.className = 'success';
-                    loadEntries();
-                } else {
-                    throw new Error('Failed to save');
-                }
-            } catch (error) {
-                status.textContent = '❌ Error saving entry';
-                status.className = 'error';
-            }
-        }
-
-        // Load all entries
-        async function loadEntries() {
-            const entriesList = document.getElementById('entriesList');
-            
-            try {
-                const response = await fetch('/entries');
-                const entries = await response.json();
-                
-                if (entries.length === 0) {
-                    entriesList.innerHTML = '<p class="empty">No entries yet. Write your first one!</p>';
-                    return;
-                }
-
-                entriesList.innerHTML = entries.reverse().map(entry => `
-                    <div class="entry-card">
-                        <p class="entry-content">${escapeHtml(entry.content)}</p>
-                        <div class="entry-meta">
-                            <span class="entry-id">#${entry._id || entry.id}</span>
-                            <button onclick="deleteEntry('${entry._id || entry.id}')" class="delete-btn">🗑️</button>
-                        </div>
+            entriesList.innerHTML = entries.reverse().map(entry => `
+                <div class="entry-card">
+                    <p class="entry-content">${escapeHtml(entry.content)}</p>
+                    <div class="entry-meta">
+                        <span class="entry-id">#${entry._id || entry.id}</span>
+                        <button onclick="deleteEntry('${entry._id || entry.id}')" class="delete-btn">🗑️</button>
                     </div>
-                `).join('');
-            } catch (error) {
-                entriesList.innerHTML = '<p class="error">❌ Failed to load entries</p>';
+                </div>
+            `).join('');
+        } catch (error) {
+            entriesList.innerHTML = '<p class="error">❌ Failed to load entries</p>';
+        }
+    }
+
+    // Delete entry
+    async function deleteEntry(id) {
+        try {
+            await fetch(BACKEND_URL + '/entries/' + id, { method: 'DELETE' });
+            loadEntries();
+        } catch (error) {
+            console.error('Delete failed:', error);
+        }
+    }
+
+    // Check system health
+    async function checkHealth() {
+        try {
+            const response = await fetch(BACKEND_URL + '/health');
+            const apiDot = document.querySelector('#apiStatus .dot');
+            
+            if (response.ok) {
+                apiDot.className = 'dot green';
+            } else {
+                apiDot.className = 'dot red';
             }
+        } catch (error) {
+            document.querySelector('#apiStatus .dot').className = 'dot red';
         }
+    }
 
-        // Delete entry
-        async function deleteEntry(id) {
-            try {
-                await fetch(`/entries/${id}`, { method: 'DELETE' });
-                loadEntries();
-            } catch (error) {
-                console.error('Delete failed:', error);
-            }
-        }
+    // Escape HTML to prevent XSS
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
 
-        // Check system health
-        async function checkHealth() {
-            try {
-                const response = await fetch('/health');
-                const apiDot = document.querySelector('#apiStatus .dot');
-                
-                if (response.ok) {
-                    apiDot.className = 'dot green';
-                } else {
-                    apiDot.className = 'dot red';
-                }
-            } catch (error) {
-                document.querySelector('#apiStatus .dot').className = 'dot red';
-            }
-        }
-
-        // Escape HTML to prevent XSS
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Refresh entries every 10 seconds
-        setInterval(loadEntries, 10000);
-        setInterval(checkHealth, 30000);
-    </script>
+    // Refresh entries every 10 seconds
+    setInterval(loadEntries, 10000);
+    setInterval(checkHealth, 30000);
+</script>
 </body>
 </html>
