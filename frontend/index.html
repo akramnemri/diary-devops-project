@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Diary - DevOps Project</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📔 My Diary</h1>
+            <p class="subtitle">DevOps Mini Project 2026</p>
+        </header>
+
+        <main>
+            <!-- Add Entry Section -->
+            <section class="add-entry">
+                <h2>New Entry</h2>
+                <textarea id="entryContent" placeholder="Write your thoughts..." rows="4"></textarea>
+                <button onclick="addEntry()">💾 Save Entry</button>
+                <p id="addStatus"></p>
+            </section>
+
+            <!-- Entries List -->
+            <section class="entries">
+                <h2>📝 My Entries</h2>
+                <div id="entriesList">
+                    <p class="loading">Loading entries...</p>
+                </div>
+            </section>
+
+            <!-- Status Section -->
+            <section class="status">
+                <h2>⚙️ System Status</h2>
+                <div class="status-grid">
+                    <div class="status-card" id="apiStatus">
+                        <span class="dot"></span>
+                        <span>API</span>
+                    </div>
+                    <div class="status-card" id="dbStatus">
+                        <span class="dot"></span>
+                        <span>Database</span>
+                    </div>
+                    <div class="status-card">
+                        <span class="dot green"></span>
+                        <span>Kubernetes</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>🔒 DevSecOps | 📊 Prometheus + Grafana | ☸️ Kubernetes + ArgoCD</p>
+        </footer>
+    </div>
+
+    <script>
+        // Backend URL - change if needed
+        const API_URL = window.location.origin.replace('3001', '3000') + '/api';
+        // For production, use the service URL
+        // const API_URL = 'http://diary-backend-service:80';
+
+        // Load entries on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadEntries();
+            checkHealth();
+        });
+
+        // Add new entry
+        async function addEntry() {
+            const content = document.getElementById('entryContent').value;
+            const status = document.getElementById('addStatus');
+            
+            if (!content.trim()) {
+                status.textContent = '⚠️ Please write something!';
+                status.className = 'error';
+                return;
+            }
+
+            status.textContent = 'Saving...';
+            status.className = '';
+
+            try {
+                const response = await fetch('/entries', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: content })
+                });
+
+                if (response.ok) {
+                    document.getElementById('entryContent').value = '';
+                    status.textContent = '✅ Entry saved!';
+                    status.className = 'success';
+                    loadEntries();
+                } else {
+                    throw new Error('Failed to save');
+                }
+            } catch (error) {
+                status.textContent = '❌ Error saving entry';
+                status.className = 'error';
+            }
+        }
+
+        // Load all entries
+        async function loadEntries() {
+            const entriesList = document.getElementById('entriesList');
+            
+            try {
+                const response = await fetch('/entries');
+                const entries = await response.json();
+                
+                if (entries.length === 0) {
+                    entriesList.innerHTML = '<p class="empty">No entries yet. Write your first one!</p>';
+                    return;
+                }
+
+                entriesList.innerHTML = entries.reverse().map(entry => `
+                    <div class="entry-card">
+                        <p class="entry-content">${escapeHtml(entry.content)}</p>
+                        <div class="entry-meta">
+                            <span class="entry-id">#${entry._id || entry.id}</span>
+                            <button onclick="deleteEntry('${entry._id || entry.id}')" class="delete-btn">🗑️</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                entriesList.innerHTML = '<p class="error">❌ Failed to load entries</p>';
+            }
+        }
+
+        // Delete entry
+        async function deleteEntry(id) {
+            try {
+                await fetch(`/entries/${id}`, { method: 'DELETE' });
+                loadEntries();
+            } catch (error) {
+                console.error('Delete failed:', error);
+            }
+        }
+
+        // Check system health
+        async function checkHealth() {
+            try {
+                const response = await fetch('/health');
+                const apiDot = document.querySelector('#apiStatus .dot');
+                
+                if (response.ok) {
+                    apiDot.className = 'dot green';
+                } else {
+                    apiDot.className = 'dot red';
+                }
+            } catch (error) {
+                document.querySelector('#apiStatus .dot').className = 'dot red';
+            }
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Refresh entries every 10 seconds
+        setInterval(loadEntries, 10000);
+        setInterval(checkHealth, 30000);
+    </script>
+</body>
+</html>

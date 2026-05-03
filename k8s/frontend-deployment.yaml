@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: diary-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: diary-frontend
+  template:
+    metadata:
+      labels:
+        app: diary-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: hushfire/diary-frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: diary-frontend-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: diary-frontend
+  ports:
+    - port: 80
+      targetPort: 80
