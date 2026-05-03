@@ -104,9 +104,18 @@ app.get("/metrics", async (req, res) => {
 });
 
 const PORT = 3000;
-connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log("Diary backend initialized");
-    console.log(`Server running on port ${PORT}`);
+connectDB()
+  .then(() => {
+    console.log("Connected to MongoDB Atlas");
+    app.listen(PORT, () => {
+      console.log("Diary backend initialized");
+      console.log(`Server running on port ${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error("FATAL: MongoDB connection failed:", err.message);
+    // Still start server for health checks
+    app.listen(PORT, () => {
+      console.log(`Server running WITHOUT database on port ${PORT}`);
+    });
   });
-});
