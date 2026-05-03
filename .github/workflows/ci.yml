@@ -49,7 +49,7 @@ jobs:
           SONAR_HOST_URL: https://sonarcloud.io
         with:
           args: >
-            -Dsonar.projectKey=devops-teams_devops-project
+            -Dsonar.projectKey=devops-teams-devops-project
             -Dsonar.organization=devops-teams
             -Dsonar.sources=backend
             -Dsonar.verbose=true
