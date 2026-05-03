@@ -43,11 +43,13 @@ jobs:
         uses: SonarSource/sonarqube-scan-action@v4
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
         with:
           args: >
             -Dsonar.projectKey=devops-teams_devops-project
             -Dsonar.organization=devops-teams
             -Dsonar.sources=backend
+            -Dsonar.verbose=true
 
       - name: Build Docker image
         run: |
