@@ -28,6 +28,17 @@ jobs:
         run: |
           cd backend
           node -e "console.log('Basic check passed')"
+      
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=YOUR_PROJECT_KEY
+            -Dsonar.organization=YOUR_ORG
+            -Dsonar.sources=backend
 
       - name: Build Docker image
         run: |
