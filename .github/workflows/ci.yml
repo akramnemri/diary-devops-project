@@ -3,10 +3,13 @@ name: CI Pipeline
 on:
   push:
     branches:
+      - main
       - dev
       - feat/**
   pull_request:
     types: [opened, synchronize, reopened]
+    branches:
+      - main
 
 jobs:
   ci:
